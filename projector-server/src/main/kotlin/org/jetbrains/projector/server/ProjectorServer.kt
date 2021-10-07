@@ -277,14 +277,10 @@ class ProjectorServer private constructor(
     calculateMainWindowShift()
 
     val drawCommands = extractData(ProjectorDrawEventQueue.commands)
-      .groupBy { (target, _) -> target }
-      .mapValues { (_, commands) ->
-        commands.map { (_, subcommands) -> subcommands }
-      }
       .map { (target, commands) ->
         ServerDrawCommandsEvent(
           target = target,
-          drawEvents = commands.convertToSimpleList(),
+          drawEvents = commands,  // todo: use convertToSimpleList or similar
         )
       }
 
