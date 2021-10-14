@@ -24,13 +24,17 @@
 package org.jetbrains.projector.plugin.ui
 
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.impl.ProjectFrameHelper
 import org.jetbrains.projector.plugin.actions.ProjectorActionGroup
+import javax.swing.JComponent
+import javax.swing.JFrame
 
-fun installUI() {
-  if (!installProjectorWidget()) {
+fun installUI(project: Project) {
+  if (!installProjectorWidget(project)) {
     installMenu()
   }
 }
@@ -41,7 +45,7 @@ fun installMenu() {
                       "Use Projector menu to manage plugin")
 }
 
-fun installProjectorWidget(): Boolean {
+fun installProjectorWidget(project: Project): Boolean {
   val statusBar = getIdeStatusBar() ?: return false
 
   if (statusBar.getWidget(ProjectorStatusWidget.ID) != null) return true // already installed
@@ -58,9 +62,11 @@ fun installProjectorWidget(): Boolean {
   val ret = method != null
 
   method?.let {
-    val widget = ProjectorStatusWidget(statusBar)
+    val widget = ProjectorStatusWidget(project, statusBar)
     it.invoke(statusBar, widget, StatusBar.Anchors.DEFAULT_ANCHOR)
     widget.update()
+
+    widget.showGotItMessage("I'm here!")
   }
 
   return ret
@@ -89,4 +95,12 @@ private fun removeProjectorWidget() {
 private fun getIdeStatusBar(): StatusBar? {
   val frame = WindowManager.getInstance().getIdeFrame(null) ?: return null
   return WindowManager.getInstance().getStatusBar(frame.component, null)
+}
+
+fun getWidgetJComponent(project: Project, widgetID: String): JComponent? {
+  val window = WindowManager.getInstance().suggestParentWindow(project) ?: return null
+  val projectFrameHelper = ProjectFrameHelper.getFrameHelper(window) ?: return null
+  val statusImpl = projectFrameHelper.statusBar ?: return null
+
+  return statusImpl.getWidgetComponent(widgetID)
 }
