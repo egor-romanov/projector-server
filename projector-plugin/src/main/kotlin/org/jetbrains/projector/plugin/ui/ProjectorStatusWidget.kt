@@ -30,14 +30,14 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.ListPopup
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidget.WidgetPresentation
-import com.intellij.ui.GotItMessage
-import com.intellij.ui.awt.RelativePoint
+import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.impl.ProjectFrameHelper
+import com.intellij.util.Alarm
 import com.intellij.util.Consumer
 import org.jetbrains.projector.plugin.*
 import org.jetbrains.projector.plugin.actions.*
@@ -46,6 +46,7 @@ import java.awt.event.MouseEvent
 import java.beans.PropertyChangeEvent
 import java.beans.PropertyChangeListener
 import javax.swing.Icon
+import javax.swing.JComponent
 import javax.swing.SwingUtilities
 
 class ProjectorStatusWidget(private val project: Project, private val myStatusBar: StatusBar)
@@ -54,6 +55,8 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
     StatusBarWidget.Multiframe,
     ProjectorStateListener,
     PropertyChangeListener {
+
+  val alarm = Alarm()
 
   private var clients = 0
 
@@ -76,9 +79,21 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
 
   override fun getIcon() = updateIcon()
 
+  private fun showActivationWarning() {
+    if (isActivationNeeded()) {
+      val shown = showProjectorGotItMessage("Plugin activation required!\n " +
+                                            "Please click on Projector widget below.")
+
+      if (!shown) {
+        alarm.addRequest( {showActivationWarning()}, 1000 )
+      }
+    }
+  }
+
   override fun install(statusBar: StatusBar) {
     ProjectorService.subscribe(this)
     update()
+    alarm.addRequest({showActivationWarning()}, 1000)
   }
 
   override fun dispose() {
@@ -99,7 +114,6 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
   }
 
   private fun updateIcon(): Icon {
-    showGotItMessage("I'm here!")
     return when {
       isActivationNeeded() -> ACTIVATION_NEEDED_SIGN
       isProjectorRunning() -> RUNNING_SIGN
@@ -119,6 +133,7 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
   }
 
   private fun updateTooltip(): String {
+
     return when {
       isActivationNeeded() -> "Activation is needed"
       isProjectorRunning() -> "Projector is running. Connected clients: $clients"
@@ -162,13 +177,16 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
     }
   }
 
+  // Note - we are not implementing CustomStatusBarWidget interface!
+  // This method just provides the way to get widget JComponent after add it to
+  // statusBar
+  fun getComponent(): JComponent? {
+    val window = WindowManager.getInstance().suggestParentWindow(project) ?: return null
+    val projectFrameHelper = ProjectFrameHelper.getFrameHelper(window) ?: return null
+    val statusImpl = projectFrameHelper.statusBar ?: return null
 
-  fun showGotItMessage(message: String) {
-    val component = getWidgetJComponent(project, ID) ?: return
-    val gotItMessage = GotItMessage.createMessage("Projector", message).setDisposable(this)
-    gotItMessage.show(RelativePoint.getCenterOf(component), Balloon.Position.above)
+    return statusImpl.getWidgetComponent(ID)
   }
-
 
   companion object {
     val ID: String by lazy { ProjectorStatusWidget::class.java.name }

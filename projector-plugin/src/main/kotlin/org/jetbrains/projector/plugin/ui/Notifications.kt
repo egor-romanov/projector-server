@@ -27,6 +27,9 @@ package org.jetbrains.projector.plugin.ui
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.ui.popup.Balloon
+import com.intellij.ui.GotItMessage
+import com.intellij.ui.awt.RelativePoint
 
 
 private fun getNotificationGroup(): NotificationGroup? {
@@ -58,3 +61,17 @@ fun displayNotification(title: String, subtitle: String, content: String) {
   msg?.setTitle(title, subtitle)
   msg?.notify(null)
 }
+
+fun showProjectorGotItMessage(message: String) : Boolean {
+  val sb = getStatusBar() ?: return false
+  val widget = sb.getWidget(ProjectorStatusWidget.ID) ?: return false
+
+  if (widget is ProjectorStatusWidget) {
+    val component = widget.getComponent() ?: return false
+    val gotItMessage = GotItMessage.createMessage("Projector", message).setDisposable(widget)
+    gotItMessage.show(RelativePoint.getCenterOf(component), Balloon.Position.above)
+  }
+
+  return true
+}
+
