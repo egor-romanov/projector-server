@@ -61,17 +61,3 @@ fun displayNotification(title: String, subtitle: String, content: String) {
   msg?.setTitle(title, subtitle)
   msg?.notify(null)
 }
-
-fun showProjectorGotItMessage(message: String) : Boolean {
-  val sb = getStatusBar() ?: return false
-  val widget = sb.getWidget(ProjectorStatusWidget.ID) ?: return false
-
-  if (widget is ProjectorStatusWidget) {
-    val component = widget.getComponent() ?: return false
-    val gotItMessage = GotItMessage.createMessage("Projector", message).setDisposable(widget)
-    gotItMessage.show(RelativePoint.getCenterOf(component), Balloon.Position.above)
-  }
-
-  return true
-}
-

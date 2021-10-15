@@ -42,6 +42,7 @@ class RegisterPluginInstallerStateListener : StartupActivity, DumbAware {
 
       override fun uninstall(descriptor: IdeaPluginDescriptor) {
         removeUI()
+        ProjectorInstallStateKeeper.getInstance().removeFirstRunMark()
         ProjectorService.autostart = false
 
         if (isProjectorRunning()) {

@@ -37,7 +37,6 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidget.WidgetPresentation
 import com.intellij.openapi.wm.WindowManager
 import com.intellij.openapi.wm.impl.ProjectFrameHelper
-import com.intellij.util.Alarm
 import com.intellij.util.Consumer
 import org.jetbrains.projector.plugin.*
 import org.jetbrains.projector.plugin.actions.*
@@ -55,8 +54,6 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
     StatusBarWidget.Multiframe,
     ProjectorStateListener,
     PropertyChangeListener {
-
-  val alarm = Alarm()
 
   private var clients = 0
 
@@ -79,21 +76,10 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
 
   override fun getIcon() = updateIcon()
 
-  private fun showActivationWarning() {
-    if (isActivationNeeded()) {
-      val shown = showProjectorGotItMessage("Plugin activation required!\n " +
-                                            "Please click on Projector widget below.")
-
-      if (!shown) {
-        alarm.addRequest( {showActivationWarning()}, 1000 )
-      }
-    }
-  }
-
   override fun install(statusBar: StatusBar) {
     ProjectorService.subscribe(this)
     update()
-    alarm.addRequest({showActivationWarning()}, 1000)
+    HelloTooltip().sayHelloIfRequired()
   }
 
   override fun dispose() {
