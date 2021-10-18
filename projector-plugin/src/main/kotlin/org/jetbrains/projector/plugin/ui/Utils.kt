@@ -43,7 +43,7 @@ fun installMenu() {
 }
 
 fun installProjectorWidget(project: Project): Boolean {
-  val statusBar = getStatusBar() ?: return false
+  val statusBar = getStatusBar(project) ?: return false
 
   if (statusBar.getWidget(ProjectorStatusWidget.ID) != null) return true // already installed
 
@@ -73,7 +73,7 @@ fun removeUI() {
 }
 
 private fun removeProjectorWidget() {
-  val statusBar = getStatusBar() ?: return
+  val statusBar = getStatusBar(null) ?: return
 
   val method = try {
     StatusBar::class.java.getMethod("removeWidget", String::class.java)
@@ -87,7 +87,7 @@ private fun removeProjectorWidget() {
   method?.invoke(statusBar, ProjectorStatusWidget.ID)
 }
 
-fun getStatusBar(): StatusBar? {
-  val frame = WindowManager.getInstance().getIdeFrame(null) ?: return null
+fun getStatusBar(project: Project?): StatusBar? {
+  val frame = WindowManager.getInstance().getIdeFrame(project) ?: return null
   return WindowManager.getInstance().getStatusBar(frame.component, null)
 }

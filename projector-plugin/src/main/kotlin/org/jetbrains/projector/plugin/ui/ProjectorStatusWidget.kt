@@ -44,6 +44,7 @@ import java.awt.Component
 import java.awt.event.MouseEvent
 import java.beans.PropertyChangeEvent
 import java.beans.PropertyChangeListener
+import java.net.InetAddress
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.SwingUtilities
@@ -79,12 +80,12 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
   override fun install(statusBar: StatusBar) {
     ProjectorService.subscribe(this)
     update()
-    HelloTooltip().sayHelloIfRequired()
+    HelloMessage(project).sayHelloIfRequired()
   }
 
   override fun dispose() {
     ProjectorService.unsubscribe(this)
-    ProjectorService.removeClientsObserver(this)
+    ProjectorService.removeObserver(this)
   }
 
   fun update() {
@@ -93,7 +94,7 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
 
   override fun stateChanged() {
     if (isProjectorRunning()) {
-      ProjectorService.addClientsObserver(this)
+      ProjectorService.addObserver(this)
     }
 
     update()
@@ -158,8 +159,20 @@ class ProjectorStatusWidget(private val project: Project, private val myStatusBa
 
   override fun propertyChange(event: PropertyChangeEvent?) {
     event?.let {
-      clients = event.newValue as Int
-      SwingUtilities.invokeLater { update() }
+      when (event.propertyName) {
+        "clientsCount" -> {
+          clients = event.newValue as Int
+          SwingUtilities.invokeLater { update() }
+        }
+
+        "macLocalConnection" -> {
+          val message = "Locally connected client on Mac detected " +
+                        "(${(event.newValue as InetAddress).toString().substring(1)})\n" +
+                        "Keyboard input for such clients is unsupported yet"
+          SwingUtilities.invokeLater { showMessage(project, "Warning!", message) }
+        }
+        else -> Unit
+      }
     }
   }
 
